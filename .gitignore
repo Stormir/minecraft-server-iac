@@ -42,3 +42,32 @@ terraform.rc
 # Optional: ignore plan files saved before destroying Terraform configuration
 # Uncomment the line below if you want to ignore planout files.
 # planout
+
+# Terraform local files
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/.terraform.lock.hcl
+
+# Terraform variable secrets
+*.tfvars
+!terraform.tfvars.example
+
+# SSH keys
+*.pem
+*.ppk
+id_rsa
+id_rsa.pub
+
+# AWS credentials / local env files
+.env
+*.env
+.aws/
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+.vscode/
