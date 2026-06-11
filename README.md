@@ -89,23 +89,24 @@ The pipeline works as follows:
 6. nmap tests TCP port 25565.
 7. AWS CLI reboots the EC2 instance.
 8. nmap tests port 25565 again after reboot.
+```
 
 ## Pipeline Diagram
 
-``mermaid
+```mermaid
 flowchart TD
-A[Windows PowerShell Scripts] --> B[AWS CLI Credentials]
-B --> C[Terraform]
-C --> D[EC2 Instance]
-C --> E[Security Group Rules]
-C --> F[EC2 Key Pair]
-D --> G[Ansible through WSL Ubuntu]
-G --> H[Install Java 25 and Minecraft]
-G --> I[Create systemd Service]
-I --> J[Minecraft Server on Port 25565]
-J --> K[nmap Test]
-B --> L[AWS CLI Reboot Test]
-L --> K
+    A[Windows PowerShell scripts] --> B[AWS CLI credentials]
+    B --> C[Terraform]
+    C --> D[EC2 instance]
+    C --> E[Security group rules]
+    C --> F[EC2 key pair]
+    D --> G[Ansible through WSL Ubuntu]
+    G --> H[Install Java 25 and Minecraft]
+    G --> I[Create systemd service]
+    I --> J[Minecraft server on port 25565]
+    J --> K[nmap test]
+    B --> L[AWS CLI reboot test]
+    L --> K
 ```
 ## AWS Credentials
 This project wants AWS CLI credentials to already be configured locally. Since I used AWS Academy Learner Lab, I copied the temporary AWS CLI credentials from the Learner Lab page into my local AWS credentials setup.
