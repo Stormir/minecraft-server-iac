@@ -91,7 +91,8 @@ The pipeline works as follows:
 8. nmap tests port 25565 again after reboot.
 
 ## Pipeline Diagram
-```mermaid
+
+``mermaid
 flowchart TD
 A[Windows PowerShell Scripts] --> B[AWS CLI Credentials]
 B --> C[Terraform]
