@@ -1,0 +1,19 @@
+[Unit]
+Description=Minecraft Server
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/minecraft
+User=minecraft
+Group=minecraft
+EnvironmentFile=/etc/minecraft/minecraft.env
+Restart=on-failure
+RestartSec=10
+ExecStart=/usr/bin/java -Xmx1024M -Xms1024M -jar server.jar nogui
+ExecStop=/usr/local/bin/mcrcon -H 127.0.0.1 -P 25575 -p ${RCON_PASSWORD} stop
+SuccessExitStatus=0 143
+TimeoutStopSec=120
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target

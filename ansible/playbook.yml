@@ -1,0 +1,158 @@
+---
+- name: Configure Minecraft server
+  hosts: minecraft
+  become: true
+
+  vars:
+    minecraft_dir: /opt/minecraft
+    minecraft_user: minecraft
+    minecraft_group: minecraft
+    minecraft_server_url: "https://piston-data.mojang.com/v1/objects/97ccd4c0ed3f81bbb7bfacddd1090b0c56f9bc51/server.jar"
+    minecraft_motd: "Stormi Automated Minecraft Server"
+    rcon_password: "StormiLocalRconOnly123!"
+
+  tasks:
+    - name: Update apt package list
+      apt:
+        update_cache: true
+
+    - name: Install base packages
+      apt:
+        name:
+          - wget
+          - gpg
+          - apt-transport-https
+          - ca-certificates
+          - nano
+          - git
+          - build-essential
+        state: present
+
+    - name: Download the Temurin signing key
+      get_url:
+        url: https://packages.adoptium.net/artifactory/api/gpg/key/public
+        dest: /tmp/adoptium.asc
+        mode: '0644'
+
+    - name: Add the Temurin signing key
+      command: gpg --dearmor -o /etc/apt/trusted.gpg.d/adoptium.gpg /tmp/adoptium.asc
+      args:
+        creates: /etc/apt/trusted.gpg.d/adoptium.gpg
+
+    - name: Add the Temurin package repository
+      apt_repository:
+        repo: "deb https://packages.adoptium.net/artifactory/deb noble main"
+        state: present
+        filename: adoptium
+
+    - name: Update the package list again
+      apt:
+        update_cache: true
+
+    - name: Install Java 25
+      apt:
+        name: temurin-25-jdk
+        state: present
+
+    - name: Create minecraft group
+      group:
+        name: "{{ minecraft_group }}"
+        system: true
+
+    - name: Create minecraft user
+      user:
+        name: "{{ minecraft_user }}"
+        group: "{{ minecraft_group }}"
+        home: "{{ minecraft_dir }}"
+        shell: /usr/sbin/nologin
+        system: true
+        create_home: false
+
+    - name: Create Minecraft server folder
+      file:
+        path: "{{ minecraft_dir }}"
+        state: directory
+        owner: "{{ minecraft_user }}"
+        group: "{{ minecraft_group }}"
+        mode: '0755'
+
+    - name: Download Minecraft server file
+      get_url:
+        url: "{{ minecraft_server_url }}"
+        dest: "{{ minecraft_dir }}/server.jar"
+        owner: "{{ minecraft_user }}"
+        group: "{{ minecraft_group }}"
+        mode: '0644'
+
+    - name: Accept Minecraft EULA
+      copy:
+        dest: "{{ minecraft_dir }}/eula.txt"
+        content: |
+          eula=true
+        owner: "{{ minecraft_user }}"
+        group: "{{ minecraft_group }}"
+        mode: '0644'
+
+    - name: Write Minecraft server settings
+      copy:
+        dest: "{{ minecraft_dir }}/server.properties"
+        content: |
+          server-port=25565
+          motd={{ minecraft_motd }}
+          enable-rcon=true
+          rcon.port=25575
+          rcon.password={{ rcon_password }}
+          enable-query=false
+          online-mode=true
+          max-players=20
+          difficulty=easy
+          gamemode=survival
+        owner: "{{ minecraft_user }}"
+        group: "{{ minecraft_group }}"
+        mode: '0644'
+
+    - name: Clone mcrcon source
+      git:
+        repo: https://github.com/Tiiffi/mcrcon.git
+        dest: /tmp/mcrcon
+        version: master
+        force: true
+
+    - name: Build mcrcon
+      command: make
+      args:
+        chdir: /tmp/mcrcon
+        creates: /tmp/mcrcon/mcrcon
+
+    - name: Install mcrcon
+      copy:
+        src: /tmp/mcrcon/mcrcon
+        dest: /usr/local/bin/mcrcon
+        remote_src: true
+        mode: '0755'
+
+    - name: Create Minecraft config folder
+      file:
+        path: /etc/minecraft
+        state: directory
+        mode: '0755'
+
+    - name: Create Minecraft environment file
+      copy:
+        dest: /etc/minecraft/minecraft.env
+        content: |
+          RCON_PASSWORD={{ rcon_password }}
+        mode: '0600'
+
+    - name: Install minecraft systemd service
+      template:
+        src: minecraft.service.j2
+        dest: /etc/systemd/system/minecraft.service
+        mode: '0644'
+
+    - name: Enable and start minecraft service
+      systemd:
+        name: minecraft
+        enabled: true
+        state: started
+        daemon_reload: true
